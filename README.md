@@ -16,5 +16,7 @@ pip install poetry
     ```python
     poetry run python crawl_extract_metadata_csv.py neuroscience metadata.csv 2 10
     ```
+    
+    The number 2 indicates to crawl 2 pages and number 10 indicates the 10 threadpool worker. For download publications, there's no need to specify the worker.
 ## License
 MIT
