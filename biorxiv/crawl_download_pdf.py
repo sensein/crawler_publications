@@ -29,7 +29,7 @@ import sys
 USER_AGENT_FILE_PATH = "user_agents.json"
 BIORXIV_URL_CATEGORY = "https://www.biorxiv.org/collection"
 BIORXIV_URL = "https://www.biorxiv.org"
-
+MAX_PAGES=2
 def get_user_agents(filepath=USER_AGENT_FILE_PATH):
     with open(filepath, "r") as f:
         try:
@@ -43,7 +43,7 @@ def get_random_user_agent():
     return random.choice(get_user_agents())
 
 
-def crawl_and_download_pdf(category, output_folder="downloaded_pdf_files", max_pages=5):
+def crawl_and_download_pdf(category, output_folder="downloaded_pdf_files", max_pages=MAX_PAGES):
     """ Crawls biorxiv site based on category and downloads the articles
     :param category: category to crawl, e.g., neuroscience
     :param output_folder: output folder to save the downloaded pdf files
@@ -80,7 +80,7 @@ def crawl_and_download_pdf(category, output_folder="downloaded_pdf_files", max_p
 
             for article in articles:
                 article_title = article.text.strip()
-                article_link = urljoin("https://www.biorxiv.org", article['href'])
+                article_link = urljoin(f"{BIORXIV_URL}", article['href'])
 
                 headers["User-Agent"] = get_random_user_agent()
                 try:
