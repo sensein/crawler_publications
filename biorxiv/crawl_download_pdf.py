@@ -25,7 +25,12 @@ import random
 import time
 from urllib.parse import urljoin
 import sys
-def get_user_agents(filepath="user_agents.json"):
+
+USER_AGENT_FILE_PATH = "user_agents.json"
+BIORXIV_URL_CATEGORY = "https://www.biorxiv.org/collection"
+BIORXIV_URL = "https://www.biorxiv.org"
+
+def get_user_agents(filepath=USER_AGENT_FILE_PATH):
     with open(filepath, "r") as f:
         try:
             data = json.load(f)
@@ -55,7 +60,7 @@ def crawl_and_download_pdf(category, output_folder="downloaded_pdf_files", max_p
     with requests.Session() as session:
         while current_page < max_pages:
             headers = {"User-Agent": get_random_user_agent()}
-            category_url = f"https://www.biorxiv.org/collection/{category}?page={current_page}"
+            category_url = f"{BIORXIV_URL_CATEGORY}/{category}?page={current_page}"
 
             try:
                 response = session.get(category_url, headers=headers)
@@ -91,7 +96,7 @@ def crawl_and_download_pdf(category, output_folder="downloaded_pdf_files", max_p
                     sys.stdout.write(f"No PDF link found for article: {article_title}")
                     continue
 
-                pdf_url = urljoin("https://www.biorxiv.org", pdf_link['href'])
+                pdf_url = urljoin(f"{BIORXIV_URL}", pdf_link['href'])
                 download_pdf(pdf_url, article_title, output_folder)
                 article_count += 1
 

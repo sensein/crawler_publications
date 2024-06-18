@@ -26,7 +26,14 @@ import json
 from urllib.parse import urljoin
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import sys
-def get_user_agents(filepath="user_agents.json"):
+USER_AGENT_FILE_PATH = "user_agents.json"
+BIORXIV_URL_CATEGORY = "https://www.biorxiv.org/collection"
+BIORXIV_URL = "https://www.biorxiv.org"
+OUTPUT_CSV_FILE = "metadata.csv"
+MAX_WORKERS = 10
+MAX_PAGES = 5
+
+def get_user_agents(filepath=USER_AGENT_FILE_PATH):
     with open(filepath, "r") as f:
         try:
             data = json.load(f)
@@ -86,7 +93,7 @@ def extract_article_info(article_link):
     return [paper_title, doi, authors, posted, copyright_info]
 
 
-def crawl_and_extract_metadata(category, output_file="output_metadata.csv", max_pages=5, max_workers=10):
+def crawl_and_extract_metadata(category, output_file=OUTPUT_CSV_FILE, max_pages=MAX_PAGES, max_workers=MAX_WORKERS):
     """ Crawls biorxiv site based on category and downloads the articles metadata in csv format
     :param category: category to crawl, e.g., neuroscience
     :param output_folder: output folder to save the downloaded pdf files
@@ -107,7 +114,7 @@ def crawl_and_extract_metadata(category, output_file="output_metadata.csv", max_
         with requests.Session() as session:
             while current_page <= max_pages:
                 headers = {"User-Agent": get_random_user_agent()}
-                category_url = f"https://www.biorxiv.org/collection/{category}?page={current_page}"
+                category_url = f"{BIORXIV_URL_CATEGORY}/{category}?page={current_page}"
 
                 try:
                     response = session.get(category_url, headers=headers)
@@ -129,7 +136,7 @@ def crawl_and_extract_metadata(category, output_file="output_metadata.csv", max_
                 with ThreadPoolExecutor(max_workers=max_workers) as executor:
                     # Submit all tasks and collect futures
                     futures = [
-                        executor.submit(extract_article_info, urljoin("https://www.biorxiv.org", article['href'])) for
+                        executor.submit(extract_article_info, urljoin(f"{BIORXIV_URL}", article['href'])) for
                         article in articles]
 
                     for future in as_completed(futures):
