@@ -26,6 +26,13 @@ import json
 from urllib.parse import urljoin
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import sys
+
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(filename='download_publication_metadata_biorxiv.log', level=logging.INFO)
+
+
 USER_AGENT_FILE_PATH = "user_agents.json"
 BIORXIV_URL_CATEGORY = "https://www.biorxiv.org/collection"
 BIORXIV_URL = "https://www.biorxiv.org"
@@ -39,7 +46,7 @@ def get_user_agents(filepath):
             data = json.load(f)
             return data["user_agents"]
         except json.JSONDecodeError as e:
-            sys.stdout.write(f"Error decoding JSON: {e}")
+            logger.debug(f"Error decoding JSON: {e}")
             return None
 
 
@@ -57,7 +64,7 @@ def extract_article_info(article_link, file_path=None):
         article_response = requests.get(article_link, headers=headers)
         article_response.raise_for_status()
     except requests.RequestException as e:
-        sys.stdout.write(f"Failed to retrieve article page: {article_link} due to: {e}")
+        logger.debug(f"Failed to retrieve article page: {article_link} due to: {e}")
         return None
 
     article_soup = BeautifulSoup(article_response.content, 'html.parser')
@@ -122,17 +129,17 @@ def crawl_and_extract_metadata(category, output_file=OUTPUT_CSV_FILE, max_pages=
                     response = session.get(category_url, headers=headers)
                     response.raise_for_status()
                 except requests.RequestException as e:
-                    sys.stdout.write(f"Failed to retrieve page {current_page} for category: {category} due to: {e}")
+                    logger.debug(f"Failed to retrieve page {current_page} for category: {category} due to: {e}")
                     break
 
                 soup = BeautifulSoup(response.content, 'html.parser')
                 articles = soup.find_all('a', class_='highwire-cite-linked-title')
 
                 if not articles:
-                    sys.stdout.write("No more articles found.")
+                    logger.info("No more articles found.")
                     break
 
-                sys.stdout.write(f"Page {current_page}: Found {len(articles)} articles in category '{category}'")
+                logger.info(f"Page {current_page}: Found {len(articles)} articles in category '{category}'")
 
                 # Create a ThreadPoolExecutor
                 with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -145,7 +152,7 @@ def crawl_and_extract_metadata(category, output_file=OUTPUT_CSV_FILE, max_pages=
                         result = future.result()
                         if result:
                             writer.writerow(result)
-                            sys.stdout.write(f"Extracted: {result[0]}")
+                            logger.info(f"Extracted: {result[0]}")
 
                 current_page += 1
                 time.sleep(random.uniform(5, 10))  # Random delay between 5 and 10 seconds
