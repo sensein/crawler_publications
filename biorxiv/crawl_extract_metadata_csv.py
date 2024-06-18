@@ -33,7 +33,7 @@ OUTPUT_CSV_FILE = "metadata.csv"
 MAX_WORKERS = 10
 MAX_PAGES = 5
 
-def get_user_agents(filepath=USER_AGENT_FILE_PATH):
+def get_user_agents(filepath):
     with open(filepath, "r") as f:
         try:
             data = json.load(f)
@@ -44,13 +44,15 @@ def get_user_agents(filepath=USER_AGENT_FILE_PATH):
 
 
 # Function to get a random User-Agent
-def get_random_user_agent():
-    return random.choice(get_user_agents())
+def get_random_user_agent(file):
+    return random.choice(get_user_agents(file))
 
 
 # Function to extract information from an article
-def extract_article_info(article_link):
-    headers = {"User-Agent": get_random_user_agent()}
+def extract_article_info(article_link, file_path=None):
+    if not file_path:
+        file_path = USER_AGENT_FILE_PATH
+    headers = {"User-Agent": get_random_user_agent(file_path)}
     try:
         article_response = requests.get(article_link, headers=headers)
         article_response.raise_for_status()
