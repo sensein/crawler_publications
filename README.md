@@ -18,5 +18,11 @@ pip install poetry
     ```
     
     The number 2 indicates to crawl 2 pages and number 10 indicates the 10 threadpool worker. For download publications, there's no need to specify the worker.
+- Running unit tests
+  ````bash
+  poetry shell
+  pytest 
+  ````
+
 ## License
 MIT
