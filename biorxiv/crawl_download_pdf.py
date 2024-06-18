@@ -28,12 +28,14 @@ import sys
 import logging
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(filename='download_publication_pdf_biorxiv.log', level=logging.INFO)
+logging.basicConfig(filename="download_publication_pdf_biorxiv.log", level=logging.INFO)
 
 USER_AGENT_FILE_PATH = "user_agents.json"
 BIORXIV_URL_CATEGORY = "https://www.biorxiv.org/collection"
 BIORXIV_URL = "https://www.biorxiv.org"
-MAX_PAGES=2
+MAX_PAGES = 2
+
+
 def get_user_agents(filepath=USER_AGENT_FILE_PATH):
     with open(filepath, "r") as f:
         try:
@@ -43,12 +45,15 @@ def get_user_agents(filepath=USER_AGENT_FILE_PATH):
             logger.debug(f"Error decoding JSON: {e}")
             return None
 
+
 def get_random_user_agent():
     return random.choice(get_user_agents())
 
 
-def crawl_and_download_pdf(category, output_folder="downloaded_pdf_files", max_pages=MAX_PAGES):
-    """ Crawls biorxiv site based on category and downloads the articles
+def crawl_and_download_pdf(
+    category, output_folder="downloaded_pdf_files", max_pages=MAX_PAGES
+):
+    """Crawls biorxiv site based on category and downloads the articles
     :param category: category to crawl, e.g., neuroscience
     :param output_folder: output folder to save the downloaded pdf files
     :param max_pages: pagination or the number of sub-pages pages to scan for
@@ -70,37 +75,43 @@ def crawl_and_download_pdf(category, output_folder="downloaded_pdf_files", max_p
                 response = session.get(category_url, headers=headers)
                 response.raise_for_status()
             except requests.RequestException as e:
-                logger.debug(f"Failed to retrieve page {current_page + 1} for category: {category} due to: {e}")
+                logger.debug(
+                    f"Failed to retrieve page {current_page + 1} for category: {category} due to: {e}"
+                )
                 break
 
-            soup = BeautifulSoup(response.content, 'html.parser')
-            articles = soup.find_all('a', class_='highwire-cite-linked-title')
+            soup = BeautifulSoup(response.content, "html.parser")
+            articles = soup.find_all("a", class_="highwire-cite-linked-title")
 
             if not articles:
                 logger.info("No more publications were found.")
                 break
 
-            logger.info(f"Page {current_page + 1}: Found {len(articles)} articles in category '{category}'")
+            logger.info(
+                f"Page {current_page + 1}: Found {len(articles)} articles in category '{category}'"
+            )
 
             for article in articles:
                 article_title = article.text.strip()
-                article_link = urljoin(f"{BIORXIV_URL}", article['href'])
+                article_link = urljoin(f"{BIORXIV_URL}", article["href"])
 
                 headers["User-Agent"] = get_random_user_agent()
                 try:
                     article_response = session.get(article_link, headers=headers)
                     article_response.raise_for_status()
                 except requests.RequestException as e:
-                    logger.debug(f"Failed to retrieve article page: {article_title} due to: {e}")
+                    logger.debug(
+                        f"Failed to retrieve article page: {article_title} due to: {e}"
+                    )
                     continue
 
-                article_soup = BeautifulSoup(article_response.content, 'html.parser')
-                pdf_link = article_soup.find('a', class_='article-dl-pdf-link')
+                article_soup = BeautifulSoup(article_response.content, "html.parser")
+                pdf_link = article_soup.find("a", class_="article-dl-pdf-link")
                 if pdf_link is None:
                     logger.info(f"No PDF link found for article: {article_title}")
                     continue
 
-                pdf_url = urljoin(f"{BIORXIV_URL}", pdf_link['href'])
+                pdf_url = urljoin(f"{BIORXIV_URL}", pdf_link["href"])
                 download_pdf(pdf_url, article_title, output_folder)
                 article_count += 1
 
@@ -113,20 +124,21 @@ def crawl_and_download_pdf(category, output_folder="downloaded_pdf_files", max_p
 
 def download_pdf(pdf_url, title, output_folder):
     """Download the pdf"""
-    filename = f"{title[:50]}.pdf".replace('/', '_').replace('\\', '_')
+    filename = f"{title[:50]}.pdf".replace("/", "_").replace("\\", "_")
     filepath = os.path.join(output_folder, filename)
 
     headers = {"User-Agent": get_random_user_agent()}
     try:
         response = requests.get(pdf_url, headers=headers, stream=True)
         response.raise_for_status()
-        with open(filepath, 'wb') as file:
+        with open(filepath, "wb") as file:
             for chunk in response.iter_content(chunk_size=1024):
                 if chunk:
                     file.write(chunk)
         logger.info(f"Downloaded: {title}")
     except requests.RequestException as e:
         logger.debug(f"Failed to download {title}: {e}")
+
 
 if __name__ == "__main__":
     category = sys.argv[1]
