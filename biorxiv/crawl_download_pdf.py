@@ -26,6 +26,7 @@ import time
 from urllib.parse import urljoin
 import sys
 import logging
+import argparse
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(filename="download_publication_pdf_biorxiv.log", level=logging.INFO)
@@ -34,6 +35,7 @@ USER_AGENT_FILE_PATH = "user_agents.json"
 BIORXIV_URL_CATEGORY = "https://www.biorxiv.org/collection"
 BIORXIV_URL = "https://www.biorxiv.org"
 MAX_PAGES = 2
+MIN_VALUE=1
 
 
 def get_user_agents(filepath=USER_AGENT_FILE_PATH):
@@ -67,7 +69,7 @@ def crawl_and_download_pdf(
     article_count = 0
 
     with requests.Session() as session:
-        while current_page < max_pages:
+        while current_page <= max_pages:
             headers = {"User-Agent": get_random_user_agent()}
             category_url = f"{BIORXIV_URL_CATEGORY}/{category}?page={current_page}"
 
@@ -139,9 +141,27 @@ def download_pdf(pdf_url, title, output_folder):
     except requests.RequestException as e:
         logger.debug(f"Failed to download {title}: {e}")
 
+def validate_number_of_pages(value, min_value=MIN_VALUE, max_value=MAX_PAGES):
+    try:
+        input_value = int(value)
+        if input_value < min_value or input_value > max_value:
+            raise argparse.ArgumentTypeError(f"Number of pages must be an integer between {min_value} and {max_value}.")
+        return input_value
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"Number of pages must be an integer between {min_value} and {max_value}.")
+
+
+def start():
+    parser = argparse.ArgumentParser(description='Crawl and download PDFs.')
+    parser.add_argument('category', type=str, help='The category of the publications, e.g., neuroscience, to crawl')
+    parser.add_argument('output_folder', type=str, help='The output folder to save downloaded PDFs')
+    parser.add_argument('number_of_pages', type=validate_number_of_pages(min_value=1, max_value=4226),
+                        help='The number of pages to crawl (must be between 1 and 4226)')
+    args = parser.parse_args()
+    crawl_and_download_pdf(category=args.category,
+                           output_folder=args.output_folder,
+                           max_pages=args.number_of_pages)
+
 
 if __name__ == "__main__":
-    category = sys.argv[1]
-    output_folder = sys.argv[2]
-    number_of_pages = int(sys.argv[3])
-    crawl_and_download_pdf(category, output_folder, number_of_pages)
+    start()

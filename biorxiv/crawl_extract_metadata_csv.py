@@ -26,6 +26,7 @@ import json
 from urllib.parse import urljoin
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import sys
+import argparse
 
 import logging
 
@@ -41,6 +42,7 @@ BIORXIV_URL = "https://www.biorxiv.org"
 OUTPUT_CSV_FILE = "metadata.csv"
 MAX_WORKERS = 10
 MAX_PAGES = 5
+MIN_VALUE=1
 
 
 def get_user_agents(filepath):
@@ -179,14 +181,31 @@ def crawl_and_extract_metadata(
     return {"message": f"Data extraction completed. Output saved to {output_file}"}
 
 
+
+
+def validate_number_of_pages(value, min_value=MIN_VALUE, max_value=MAX_PAGES):
+    try:
+        input_value = int(value)
+        if input_value < min_value or input_value > max_value:
+            raise argparse.ArgumentTypeError(f"Number of pages must be an integer between {min_value} and {max_value}.")
+        return input_value
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"Number of pages must be an integer between {min_value} and {max_value}.")
+
+def start():
+    parser = argparse.ArgumentParser(description='Crawl and download PDFs.')
+    parser.add_argument('category', type=str, help='The category of the publications, e.g., neuroscience, to crawl')
+    parser.add_argument('output_folder', type=str, help='The output folder to save downloaded PDFs')
+    parser.add_argument('number_of_pages', type=validate_number_of_pages(min_value=1, max_value=4226),
+                        help='The number of pages to crawl (must be between 1 and 4226)')
+    parser.add_argument('worker', type=validate_number_of_pages(min_value=1, max_value=10), help='The number of workers')
+    args = parser.parse_args()
+    crawl_and_extract_metadata(category=args.category,
+                               output_file=args.output_folder,
+                               max_pages=args.number_of_pages,
+                               max_workers=args.worker)
+
+
+
 if __name__ == "__main__":
-    category = sys.argv[1]
-    output_folder = sys.argv[2]
-    number_of_pages = int(sys.argv[3])
-    workers = int(sys.argv[4])
-    crawl_and_extract_metadata(
-        category=category,
-        output_file=output_folder,
-        max_pages=number_of_pages,
-        max_workers=workers,
-    )
+    start()
